@@ -93,13 +93,13 @@ def callback():
 @app.route("/webhook" + TOKEN, methods=['POST'])
 def getMessage():
     #обраотчик веб хука
-    request.headers.get('content-type') == 'application/json'
+    if request.headers.get('content-type') == 'application/json':
     #print(request.headers.get)
-    json_string = request.get_data().decode('utf-8')
+      json_string = request.get_data().decode('utf-8')
     #print(json_string)
-    update = telebot.types.Update.de_json(json_string)
-    bot.process_new_updates([update])
-    return ''
+      update = telebot.types.Update.de_json(json_string)
+      bot.process_new_updates([update])
+      return ''
 
 
 
@@ -142,15 +142,7 @@ def profile():
 def start(message):
     bot.send_message(message.chat.id, 'Hello,this is strava bot one day your could analize strava in telegram. now days run in test mode ')
     ######### Вот и начинается ебалала блять как передать mesage chat id в @app.route("/login")
-    keyboard = types.InlineKeyboardMarkup()
-    params = urllib.parse.urlencode({'message.chat.id': message.chat.id})
-    print(params)
-    uri = start_uri+params
-    url_button = types.InlineKeyboardButton(text="залогиниться в стравe", url=uri)
-    keyboard.add(url_button)
-    bot.send_message(message.chat.id, "Привет! Нажми на кнопку и перейди в eбучую страву.", reply_markup=keyboard)
-    return (message.chat.id)
-
+    login_1(message.chat.id)
 
 
 
@@ -160,11 +152,11 @@ def start(message):
 def callback_query(call):
     # отправляем тока RIde i vyvodim puls i power
       if  'lasttrainigN' in call.data:
-         i=call.message.chat.id
+         chat_id=call.message.chat.id
          print(call.data)
          title, tupe ,token = call.data.split(':')
-         data2=getlasttrainigs(token)
-         for  num, key in enumerate(data2):
+         data2=getlasttrainigs(token,chat_id)
+         for num, key in enumerate(data2) :
             data1=data2[num]
             if  data1.get("type", "нихуянет") == tupe:
 
@@ -173,11 +165,11 @@ def callback_query(call):
                                                                                                                   data1["type"],
                                                                                                                   data1.get("max_heartrate", "нэт его") ,
                                                                                                                   data1.get("average_watts", "в проебе"))
-                bot.send_message(i, sent)
+                bot.send_message(chat_id, sent)
 
             else: num
 ### тут уже обработчик  стравы api тож нахуй в отдельный класс
-def getlasttrainigs(token,page=1 ,days_to_search=10, activity="ride", efforts="true"):
+def getlasttrainigs(token, chat_id, page=1 ,days_to_search=10, activity="ride", efforts="true"):
     try:
      #   timestop =round((datetime.now()-timedelta(days=days_to_search)).timestamp())
       #  timestart=round(datetime.now().timestamp())
@@ -186,12 +178,27 @@ def getlasttrainigs(token,page=1 ,days_to_search=10, activity="ride", efforts="t
         headers = {'Authorization': "Bearer "+token}
         initial_response=requests.get(url, params=param, headers = headers, allow_redirects=False)
         data2=initial_response.json()
-        print(data2)
-        return (data2)
+        if initial_response.headers.get("status") ==  "401 Unauthorized":
+                 bot.send_message(chat_id, "блять ты заебал что можно увидеть если не открыть трени!!! не перегружай сервак или пиши свой код")
+                 return (False)
+
+        if initial_response.status_code == requests.codes.ok:
+                 return (data2)
+        else:    return (False)
     except requests.exceptions.ConnectionError as e:
           #print(r.url)
         print( "Error: on url {}".format(e))
 
+def login_1(chat_id):
+    keyboard = types.InlineKeyboardMarkup()
+
+    params = urllib.parse.urlencode({'message.chat.id': chat_id})
+    print(params)
+    uri = start_uri+params
+    url_button = types.InlineKeyboardButton(text="залогиниться в стравe", url=uri)
+    keyboard.add(url_button)
+    bot.send_message(chat_id, "Привет! Нажми на кнопку и перейди в eбучую страву.", reply_markup=keyboard)
+    return (True)
 
 
 
