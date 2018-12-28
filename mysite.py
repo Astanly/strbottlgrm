@@ -36,6 +36,7 @@ client_secret = config.client_secret
 scope =  'activity:read_all,activity:write,profile:read_all,profile:write'
 authorization_base_url = 'https://www.strava.com/oauth/authorize'
 token_url = 'https://www.strava.com/oauth/token'
+refresh_url = 'https://www.strava.com/oauth/token'
 response_typ = 'code'
 redirect_uri = config.redirect_uri# Should match Site URL
 start_uri = config.start_uri
@@ -85,16 +86,10 @@ def callback():
     #print (request.args())
     print(session)
     message_chat_id=session["message.chat.id"]
-    try:
-        stravalogin = OAuth2Session(client_id)
-        token = stravalogin.fetch_token(token_url, client_secret=client_secret,
+    stravalogin = OAuth2Session(client_id)
+    token = stravalogin.fetch_token(token_url, client_secret=client_secret,
                                authorization_response=request.url)
-
-        print(session)
-
-
-    except requests.RequestException as e:
-        print("eroor")
+    print(session)
     from jinja2 import Template
     print(session)
     session['oauth_token'] = token
@@ -106,6 +101,11 @@ def callback():
     else:
        login_1(message_chat_id)
     return  (t.render(name= session['oauth_token']["athlete"].get("firstname", "мы еще не знакомы")))
+
+# @app.route("/refresh_token", methods=["GET","POST"])
+# def refresh_token():
+#     messagechatid=request.args.get('message.chat.id', None)
+
 
 @app.route("/webhook" + TOKEN, methods=['POST'])
 def getMessage():
@@ -136,15 +136,19 @@ def new_profile():
     refresh_token= session['oauth_token']['refresh_token']
     telegram_chat_id=session["message.chat.id"]
     Name = session['oauth_token']['athlete']['username']
+    user=User_filter_by_chat_id(telegram_chat_id)
+    print(user)
+    if  not user.Is_Exsist():
 
-    new_user=StravaUser( Name, telegram_chat_id,token, refresh_token)
-    db.session.add(new_user)
-    try:
+       new_user=StravaUser( Name, telegram_chat_id,token, refresh_token)
+       db.session.add(new_user)
+       try:
 
-        db.session.commit()
-    except exc.SQLAlchemyError:
-        bot.send_message(telegram_chat_id, "SQL data base failed FML")
+            db.session.commit()
+       except exc.SQLAlchemyError:
+            bot.send_message(telegram_chat_id, "SQL data base failed FML")
 
+def trainigslist_get():
     keyboard1 = types.InlineKeyboardMarkup()
     to_sent = f"lasttrainigN:Ride:{token}"
     to_sent1 = f"lasttrainigN:Run:{token}"
@@ -179,6 +183,19 @@ def del_use(message):
        user_del.del_user()
      else:
        bot.send_message(message.chat.id, "If dog doen't sheet it will exsplloed\n Create new account first")
+@bot.message_handler(commands=['revoke_token'])
+def revoke_token(message):
+    bot.send_message(message.chat.id, 'Hello,this is strava bot one day your could analize strava in telegram. now days run in test mode ')
+    ######### Вот и начинается ебалала блять как передать mesage chat id в @app.route("/login")
+    user=User_filter_by_chat_id(message.chat.id)
+    print(user)
+    if user.Is_Exsist():
+       bot.send_message(message.chat.id, 'Hello old friend {} revoking your token'.format(user.username()))
+       user.manual_refresh()
+    else:
+       login_1(message.chat.id)
+
+
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
@@ -186,11 +203,11 @@ def callback_query(call):
       if  'lasttrainigN' in call.data:
          chat_id=call.message.chat.id
          print(call.data)
-         title, tupe ,token = call.data.split(':')
+         title, tupe ,token   = call.data.split(':')
          data2=getlasttrainigs(token,chat_id)
          if data2:
             print (data2)
-            [sent_filtered_data(num,chat_id)  for  num in data2 if num["type"]== tupe]
+            [sent_filtered_data(num,chat_id)  for  num in data2 if num["type"]== tupe ]
 
 def sent_filtered_data(num, chat_id, query_string=1):
 
@@ -240,10 +257,10 @@ class User_filter_by_chat_id():
          except exc.SQLAlchemyError:
               bot.send_message(self.chat_id, "SQL data base failed FML")
     def Is_Exsist(self):
-         if self.user_to_find == None:
-             return False
-         else:
+         if self.user_to_find:
              return True
+         else:
+             return False
     def token(self):
         return self.user_to_find.token
     def refresh_token(self):
@@ -260,6 +277,20 @@ class User_filter_by_chat_id():
     def del_user(self):
         db.session.delete(self.user_to_find)
         db.session.commit()
+    def manual_refresh(self):
+        extra = {
+        'client_id': client_id,
+        'client_secret': client_secret,
+         # 'grant_type': 'refresh_token'
+          }
+        strava = OAuth2Session (client_id, )
+        try:
+           v = jsonify(strava.refresh_token(refresh_url, refresh_token=self.user_to_find.refresh_token, **extra))
+           self.refresh_data(self, v.get("access_token"), v.get("refresh_token"))
+           return True
+        except Exception as e:
+           bot.send_message(self.chat_id, "Eroor during refresh token please relogin\n {} ".format(e))
+           return False
 
 class StravaRequestUser():
     def __init__(self, chat_id, token, refresh_token):
@@ -281,14 +312,7 @@ class StravaRequestUser():
       except requests.exceptions.ConnectionError as e:
           #print(r.url)
         print( "Error: on url {}".format(e))
-   def refresh_token
-
-
-
-
-
 if __name__ == '__main__':
-
      app.run(threaded=True)
 
 
