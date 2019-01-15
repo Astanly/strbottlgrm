@@ -29,7 +29,7 @@ from telegraph import Telegraph
 from jinja2 import Environment, PackageLoader, select_autoescape
 #### начало проррамы 143 линия
 
-#убрать нахуй в отдельный файл
+#убрать в отдельный файл
 TOKEN=config.TOKEN
 bot = telebot.TeleBot(config.TOKEN, threaded=False)
 client_id = config.client_id
@@ -115,7 +115,7 @@ def callback():
     from jinja92 import Template
     print(session)
     session['oauth_token'] = token
-    acces_test = User_filter_by_chat_id(message_chat_id, token["athlete"].get("firstname", "Кокойто пидор без имени"), token['access_token'], token['refresh_token'])
+    acces_test = User_filter_by_chat_id(message_chat_id, token["athlete"].get("firstname", "Кто-то без имени"), token['access_token'], token['refresh_token'])
     t= Template("Hello {{ name }}!")
     time.sleep(20)
     if acces_test.Is_Exsist() == False:
@@ -173,7 +173,7 @@ def sent_filtered_data(num, chat_id, query_string=1):
                 sent= "Название тренировки {} \n тип тренироки {} \n максимальный пульс {} \n средняя мощность {}".format(num["name"],
                                                                                                                           num["type"],
                                                                                                                           num.get("max_heartrate", "нэт его") ,
-                                                                                                                          num.get("average_watts", "в проебе"))
+                                                                                                                          num.get("average_watts", "в нет"))
                 bot.send_message(chat_id, sent)
 
 
@@ -294,23 +294,8 @@ def revoke_token(message):
     else:
        user.login()
 
-@bot.callback_query_handler(func=lambda call: True)
-def callback_query(call):
-    # отправляем тока RIde i vyvodim puls i power
-      if  'lasttrainigN' in call.data:
-         chat_id=call.message.chat.id
-         print(call.data)
-         title, tupe ,token   = call.data.split(':')
-         data2=getlasttrainigs(token,chat_id)
-         if data2:
-            print (data2)
-            [sent_filtered_data(num, chat_id)  for  num in data2 if num["type"]== tupe ]
-            title, tupe ,token   = call.data.split(':')
-            data2=getlasttrainigs(token,chat_id)
-            if data2:
-               print (data2)
-               [sent_filtered_data(num, chat_id)  for  num in data2 if num["type"]== tupe ]
-### тут уже обработчик  стравы api тож нахуй в отдельный класс
+
+### тут уже обработчик  стравы api тож  в отдельный класс
 def getlasttrainigs(chat_id, page=1 ,days_to_search=10, activity=True, efforts=True):
     try:
         print("gettonglast_traings")
@@ -386,8 +371,6 @@ def list_get(chat_id,step,filtrer_act,filter_off, activiteis=50):
         print(train_list)
         page=train_list[step-1]["step"]["page"]
         v=train_list[step-1]["step"]["data"]
-     if step<0:
-         flag=True
      if step ==0:
         d=[]
         temp_data_dict[chat_id]=d
