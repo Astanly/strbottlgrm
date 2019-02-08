@@ -203,10 +203,6 @@ class User_filter_by_chat_id():
              return True
          else:
              return False
-    def username(self):
-        return self.user_to_find.username
-    def last_seen(self):
-        return self.user_to_find.last_seen
     def refresh_data(self):
         print('refreshing db')
         self.user_to_find.token= self.token
